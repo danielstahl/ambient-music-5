@@ -22,13 +22,12 @@ object AmbientMusic5 {
 
   def init(): Unit = {
     println("Starting up SuperCollider client")
-    client.start
+    client.start()
     Instrument.setupNodes(client)
     client.send(loadDir(SYNTH_DIR))
     synthPlayer.init()
     superColliderReceiver.start()
   }
-
 
   object FmHarmony2Patch extends Patch {
 
@@ -67,7 +66,7 @@ object AmbientMusic5 {
       }
     }
 
-    def playPart1(start: Double, reset: Boolean = true): Unit = {
+    def playPiece(start: Double = 0, reset: Boolean = true): Unit = {
       val uiBuilder: Seq[(String, mutable.Buffer[UiNote])] = Seq(
         ("High", mutable.Buffer()),
         ("Middle high", mutable.Buffer()),
@@ -78,7 +77,6 @@ object AmbientMusic5 {
 
       def addUi(track: String, start: Double, peak: Double, duration: Double, note: Int): Unit =
         uiBuilder.find(uib => uib._1 == track).map(_._2.append(UiNote(start, peak, duration, note)))
-
 
       if(reset) client.resetClock()
 
@@ -98,6 +96,8 @@ object AmbientMusic5 {
               secondThemeLow1(nextStart + (playDuration * randomRange(0.90, 1.1)))
             } else if (i == 8) {
               secondThemeMiddle1(nextStart + (playDuration * randomRange(0.90, 1.1)))
+            } else if(i == 12) {
+              secondSub1(nextStart + (playDuration * randomRange(0.66, 0.75)))
             }
 
             nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
@@ -113,6 +113,14 @@ object AmbientMusic5 {
             addUi("Sub", nextStart, 0.5, playDuration, 0)
             nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
         }
+      }
+
+      def secondSub1(start: Double): Unit = {
+        var nextStart = start
+        val amp = randomRange(0.5, 0.75)
+        val playDuration = playSubBass(nextStart, 0, amp)
+        addUi("Sub", nextStart, 0.5, playDuration, 0)
+        nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
       }
 
       def middle1(start: Double): Unit = {
@@ -288,9 +296,19 @@ object AmbientMusic5 {
               middle2(nextStart + (playDuration * randomRange(0.90, 1.1)))
             } else if(i == 2) {
               sub2(nextStart + (playDuration * randomRange(0.90, 1.1)))
+            } else if(i == 12) {
+              secondSub2(nextStart + (playDuration * randomRange(0.66, 0.75)))
             }
             nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
         }
+      }
+
+      def secondSub2(start: Double): Unit = {
+        var nextStart = start
+        val amp = randomRange(0.5, 0.75)
+        val playDuration = playSubBass(nextStart, 1, amp)
+        addUi("Sub", nextStart, 0.5, playDuration, 1)
+        nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
       }
 
       def sub2(start: Double): Unit = {
@@ -472,7 +490,7 @@ object AmbientMusic5 {
         (0 until rulers).map(_ * 10).foreach {
           rule =>
             g.drawString(
-              rule + "",
+              s"$rule",
               100 + (rule * NOTE_SCALE_FACTOR),
               20)
 
@@ -526,12 +544,6 @@ object AmbientMusic5 {
         }
       )
 
-    }
-
-
-    def testUi(): Unit = {
-      val frame = new JFrame()
-      frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
     }
 
     def playSubBass(start: Double, note: Int, amp: Double): Double = {
@@ -723,7 +735,7 @@ object AmbientMusic5 {
 
   def stop(): Unit = {
     println("Stopping SuperCollider client")
-    client.stop
+    client.stop()
     this.superColliderReceiver.stop()
   }
 }
