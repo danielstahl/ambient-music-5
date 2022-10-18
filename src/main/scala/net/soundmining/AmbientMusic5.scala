@@ -3,8 +3,10 @@ package net.soundmining
 import net.soundmining.Generative.{pickItems, randomRange}
 import net.soundmining.modular.ModularSynth.{lineControl, relativePercControl, staticControl}
 import net.soundmining.modular.SynthPlayer
-import net.soundmining.synth.SuperColliderClient.loadDir
+import net.soundmining.synth.Instrument.{EFFECT, ROOM_EFFECT, SOURCE}
+import net.soundmining.synth.SuperColliderClient.{groupHead, groupTail, loadDir}
 import net.soundmining.synth.{Instrument, Patch, PatchPlayback, SuperColliderClient, SuperColliderReceiver}
+
 import java.awt.{Dimension, Graphics}
 import javax.swing.{JFrame, JPanel, JScrollPane, SwingUtilities, WindowConstants}
 import scala.collection.mutable
@@ -14,6 +16,17 @@ object AmbientMusic5 {
   implicit val client: SuperColliderClient = SuperColliderClient()
   val SYNTH_DIR = "/Users/danielstahl/Documents/Projects/soundmining-modular/src/main/sc/synths"
   val synthPlayer = SynthPlayer(soundPlays = Map.empty, numberOfOutputBuses = 2, bufferedPlayback = false)
+  val WRITE_TO_SCORE = true
+  val SUB_PAD_BUS = 0
+  val LOW_PAD_BUS = 2
+  val MIDDLE_PAD_BUS = 4
+  val MIDDLE_HIGH_PAD_BUS = 6
+  val HIGH_PAD_BUS = 8
+  val SUB_SECOND_BUS = 10
+  val LOW_SECOND_BUS = 12
+  val MIDDLE_SECOND_BUS = 14
+  val MIDDLE_HIGH_SECOND_BUS = 16
+  val HIGH_SECOND_BUS = 18
 
   var patchPlayback: PatchPlayback = PatchPlayback(patch = FmHarmony2Patch, client = client)
   val superColliderReceiver: SuperColliderReceiver = SuperColliderReceiver(patchPlayback)
@@ -54,19 +67,27 @@ object AmbientMusic5 {
 
       octave match {
         case 1 =>
-          playSubBass(start, note, amp)
+          playSubBass(start, note, amp, 0)
         case 2 =>
-          playLow(start, note, amp)
+          playLow(start, note, amp, 0)
         case 3 =>
-          playMiddle(start, note, amp)
+          playMiddle(start, note, amp, 0)
         case 4 =>
-          playMiddleHigh(start, note, amp)
+          playMiddleHigh(start, note, amp, 0)
         case 5 =>
-          playHigh(start, note, amp)
+          playHigh(start, note, amp, 0)
       }
     }
 
     def playPiece(start: Double = 0, reset: Boolean = true): Unit = {
+
+      if (WRITE_TO_SCORE) {
+        synthPlayer.superColliderScore.addMessage(0, groupHead(0, SOURCE.nodeId))
+        synthPlayer.superColliderScore.addMessage(0, groupTail(SOURCE.nodeId, EFFECT.nodeId))
+        synthPlayer.superColliderScore.addMessage(0, groupTail(EFFECT.nodeId, ROOM_EFFECT.nodeId))
+        synthPlayer.superColliderScore.addMessage(0, loadDir(SYNTH_DIR))
+      }
+
       val uiBuilder: Seq[(String, mutable.Buffer[UiNote])] = Seq(
         ("High", mutable.Buffer()),
         ("Middle high", mutable.Buffer()),
@@ -85,7 +106,7 @@ object AmbientMusic5 {
         0 until 13 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playLow(nextStart, 0, amp)
+            val playDuration = playLow(nextStart, 0, amp, LOW_PAD_BUS)
             addUi("Low", nextStart, 0.5, playDuration, 0)
 
             if(i == 1) {
@@ -109,7 +130,7 @@ object AmbientMusic5 {
         0 until 5 foreach {
           _ =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playSubBass(nextStart, 0, amp)
+            val playDuration = playSubBass(nextStart, 0, amp, SUB_PAD_BUS)
             addUi("Sub", nextStart, 0.5, playDuration, 0)
             nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
         }
@@ -118,7 +139,7 @@ object AmbientMusic5 {
       def secondSub1(start: Double): Unit = {
         var nextStart = start
         val amp = randomRange(0.5, 0.75)
-        val playDuration = playSubBass(nextStart, 0, amp)
+        val playDuration = playSubBass(nextStart, 0, amp, SUB_PAD_BUS)
         addUi("Sub", nextStart, 0.5, playDuration, 0)
         nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
       }
@@ -128,7 +149,7 @@ object AmbientMusic5 {
         0 until 13 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playMiddle(nextStart, 0, amp)
+            val playDuration = playMiddle(nextStart, 0, amp, MIDDLE_PAD_BUS)
             addUi("Middle", nextStart, 0.5, playDuration, 0)
 
             if(i == 2) {
@@ -143,25 +164,25 @@ object AmbientMusic5 {
       def secondThemeLow1(start: Double): Unit = {
         var nextStart = start
         val amp = randomRange(0.5, 0.75)
-        var playDuration = playLow(nextStart, 8, amp)
+        var playDuration = playLow(nextStart, 8, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration, 8)
         nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
-        playDuration = playLow(nextStart, 10, amp)
+        playDuration = playLow(nextStart, 10, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration, 10)
       }
 
       def secondThemeMiddle1(start: Double): Unit = {
         var nextStart = start
         val amp = randomRange(0.5, 0.75)
-        var playDuration1 = playLow(nextStart, 8, amp)
+        var playDuration1 = playLow(nextStart, 8, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration1, 8)
-        var playDuration2 = playMiddle(nextStart, 8, amp)
+        var playDuration2 = playMiddle(nextStart, 8, amp, MIDDLE_SECOND_BUS)
         addUi("Middle", nextStart, 0.5, playDuration2, 8)
 
         nextStart = nextStart + (math.max(playDuration1, playDuration2) * randomRange(0.66, 0.75))
-        playDuration1 = playLow(nextStart, 10, amp)
+        playDuration1 = playLow(nextStart, 10, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration1, 10)
-        playDuration2 = playMiddle(nextStart, 10, amp)
+        playDuration2 = playMiddle(nextStart, 10, amp, MIDDLE_SECOND_BUS)
         addUi("Middle", nextStart, 0.5, playDuration2, 10)
       }
 
@@ -170,7 +191,7 @@ object AmbientMusic5 {
         0 until 8 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playMiddleHigh(nextStart, 0, amp)
+            val playDuration = playMiddleHigh(nextStart, 0, amp, MIDDLE_HIGH_PAD_BUS)
             addUi("Middle high", nextStart, 0.5, playDuration, 0)
 
             if (i == 1) {
@@ -185,7 +206,7 @@ object AmbientMusic5 {
         0 until 5 foreach {
           _ =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playHigh(nextStart, 0, amp)
+            val playDuration = playHigh(nextStart, 0, amp, HIGH_PAD_BUS)
             addUi("High", nextStart, 0.5, playDuration, 0)
             nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
         }
@@ -198,7 +219,7 @@ object AmbientMusic5 {
         0 until 8 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playMiddle(nextStart, 1, amp)
+            val playDuration = playMiddle(nextStart, 1, amp, MIDDLE_PAD_BUS)
             addUi("Middle", nextStart, 0.5, playDuration, 1)
 
             if(i == 1) {
@@ -213,19 +234,19 @@ object AmbientMusic5 {
       def secondThemeMiddleHigh2(start: Double): Unit = {
         var nextStart = start
         val amp = randomRange(0.5, 0.75)
-        var playDuration1 = playLow(nextStart, 8, amp)
+        var playDuration1 = playLow(nextStart, 8, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration1, 8)
-        var playDuration2 = playMiddle(nextStart, 8, amp)
+        var playDuration2 = playMiddle(nextStart, 8, amp, MIDDLE_SECOND_BUS)
         addUi("Middle", nextStart, 0.5, playDuration2, 8)
-        var playDuration3 = playMiddleHigh(nextStart, 8, amp)
+        var playDuration3 = playMiddleHigh(nextStart, 8, amp, MIDDLE_HIGH_SECOND_BUS)
         addUi("Middle high", nextStart, 0.5, playDuration3, 8)
 
         nextStart = nextStart + (Seq(playDuration1, playDuration2, playDuration3).max * randomRange(0.66, 0.75))
-        playDuration1 = playLow(nextStart, 10, amp)
+        playDuration1 = playLow(nextStart, 10, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration1, 10)
-        playDuration2 = playMiddle(nextStart, 10, amp)
+        playDuration2 = playMiddle(nextStart, 10, amp, MIDDLE_SECOND_BUS)
         addUi("Middle", nextStart, 0.5, playDuration2, 10)
-        playDuration3 = playMiddleHigh(nextStart, 10, amp)
+        playDuration3 = playMiddleHigh(nextStart, 10, amp, MIDDLE_HIGH_SECOND_BUS)
         addUi("Middle high", nextStart, 0.5, playDuration3, 10)
       }
 
@@ -233,23 +254,23 @@ object AmbientMusic5 {
       def secondThemeHigh2(start: Double): Unit = {
         var nextStart = start
         val amp = randomRange(0.5, 0.75)
-        var playDuration1 = playLow(nextStart, 8, amp)
+        var playDuration1 = playLow(nextStart, 8, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration1, 8)
-        var playDuration2 = playMiddle(nextStart, 8, amp)
+        var playDuration2 = playMiddle(nextStart, 8, amp, MIDDLE_SECOND_BUS)
         addUi("Middle", nextStart, 0.5, playDuration2, 8)
-        var playDuration3 = playMiddleHigh(nextStart, 8, amp)
+        var playDuration3 = playMiddleHigh(nextStart, 8, amp, MIDDLE_HIGH_SECOND_BUS)
         addUi("Middle high", nextStart, 0.5, playDuration3, 8)
-        var playDuration4 = playHigh(nextStart, 8, amp)
+        var playDuration4 = playHigh(nextStart, 8, amp, HIGH_SECOND_BUS)
         addUi("High", nextStart, 0.5, playDuration4, 8)
 
         nextStart = nextStart + (Seq(playDuration1, playDuration2, playDuration3, playDuration4).max * randomRange(0.66, 0.75))
-        playDuration1 = playLow(nextStart, 10, amp)
+        playDuration1 = playLow(nextStart, 10, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration1, 10)
-        playDuration2 = playMiddle(nextStart, 10, amp)
+        playDuration2 = playMiddle(nextStart, 10, amp, MIDDLE_SECOND_BUS)
         addUi("Middle", nextStart, 0.5, playDuration2, 10)
-        playDuration3 = playMiddleHigh(nextStart, 10, amp)
+        playDuration3 = playMiddleHigh(nextStart, 10, amp, MIDDLE_HIGH_SECOND_BUS)
         addUi("Middle high", nextStart, 0.5, playDuration3, 10)
-        playDuration4 = playHigh(nextStart, 10, amp)
+        playDuration4 = playHigh(nextStart, 10, amp, HIGH_SECOND_BUS)
         addUi("High", nextStart, 0.5, playDuration4, 10)
 
         val maxPlayDuration = Seq(playDuration1, playDuration2, playDuration3, playDuration4).max
@@ -261,7 +282,7 @@ object AmbientMusic5 {
         0 until 8 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playMiddleHigh(nextStart, 1, amp)
+            val playDuration = playMiddleHigh(nextStart, 1, amp, MIDDLE_HIGH_PAD_BUS)
             addUi("Middle high", nextStart, 0.5, playDuration, 1)
             if (i == 1) {
               high2(nextStart + (playDuration * randomRange(0.90, 1.1)))
@@ -275,7 +296,7 @@ object AmbientMusic5 {
         0 until 5 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playHigh(nextStart, 1, amp)
+            val playDuration = playHigh(nextStart, 1, amp, HIGH_PAD_BUS)
             addUi("High", nextStart, 0.5, playDuration, 1)
             if (i == 1) {
               secondThemeHigh2(nextStart + (playDuration * randomRange(0.90, 1.1)))
@@ -289,7 +310,7 @@ object AmbientMusic5 {
         0 until 13 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playLow(nextStart, 1, amp)
+            val playDuration = playLow(nextStart, 1, amp, LOW_PAD_BUS)
             addUi("Low", nextStart, 0.5, playDuration, 1)
 
             if (i == 1) {
@@ -306,7 +327,7 @@ object AmbientMusic5 {
       def secondSub2(start: Double): Unit = {
         var nextStart = start
         val amp = randomRange(0.5, 0.75)
-        val playDuration = playSubBass(nextStart, 1, amp)
+        val playDuration = playSubBass(nextStart, 1, amp, SUB_PAD_BUS)
         addUi("Sub", nextStart, 0.5, playDuration, 1)
         nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
       }
@@ -316,21 +337,20 @@ object AmbientMusic5 {
         0 until 5 foreach {
           _ =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playSubBass(nextStart, 1, amp)
+            val playDuration = playSubBass(nextStart, 1, amp, SUB_PAD_BUS)
             addUi("Sub", nextStart, 0.5, playDuration, 1)
             nextStart = nextStart + (playDuration * randomRange(0.66, 0.75))
         }
       }
 
       //// Third /////
-      // middle high, low, middle, sub, high
 
       def middleHigh3(start: Double): Unit = {
         var nextStart = start
         0 until 8 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playMiddleHigh(nextStart, 0, amp)
+            val playDuration = playMiddleHigh(nextStart, 0, amp, MIDDLE_HIGH_PAD_BUS)
             addUi("Middle high", nextStart, 0.5, playDuration, 0)
             if (i == 1) {
               low3(nextStart + (playDuration * randomRange(0.90, 1.1)))
@@ -344,7 +364,7 @@ object AmbientMusic5 {
         0 until 13 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playLow(nextStart, 0, amp)
+            val playDuration = playLow(nextStart, 0, amp, LOW_PAD_BUS)
             addUi("Low", nextStart, 0.5, playDuration, 0)
             if (i == 1) {
               middle3(nextStart + (playDuration * randomRange(0.90, 1.1)))
@@ -358,7 +378,7 @@ object AmbientMusic5 {
         0 until 8 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playMiddle(nextStart, 0, amp)
+            val playDuration = playMiddle(nextStart, 0, amp, MIDDLE_PAD_BUS)
             addUi("Middle", nextStart, 0.5, playDuration, 0)
             if (i == 0) {
               sub3(nextStart + (playDuration * randomRange(0.90, 1.1)))
@@ -372,7 +392,7 @@ object AmbientMusic5 {
         0 until 5 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playSubBass(nextStart, 0, amp)
+            val playDuration = playSubBass(nextStart, 0, amp, SUB_PAD_BUS)
             addUi("Sub", nextStart, 0.5, playDuration, 0)
 
             if (i == 0) {
@@ -387,27 +407,27 @@ object AmbientMusic5 {
       def secondThemeSub3(start: Double): Unit = {
         var nextStart = start
         val amp = randomRange(0.5, 0.75)
-        var playDuration0 = playSubBass(nextStart, 8, amp)
+        var playDuration0 = playSubBass(nextStart, 8, amp, SUB_SECOND_BUS)
         addUi("Sub", nextStart, 0.5, playDuration0, 8)
-        var playDuration1 = playLow(nextStart, 8, amp)
+        var playDuration1 = playLow(nextStart, 8, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration1, 8)
-        var playDuration2 = playMiddle(nextStart, 8, amp)
+        var playDuration2 = playMiddle(nextStart, 8, amp, MIDDLE_SECOND_BUS)
         addUi("Middle", nextStart, 0.5, playDuration2, 8)
-        var playDuration3 = playMiddleHigh(nextStart, 8, amp)
+        var playDuration3 = playMiddleHigh(nextStart, 8, amp, MIDDLE_HIGH_SECOND_BUS)
         addUi("Middle high", nextStart, 0.5, playDuration3, 8)
-        var playDuration4 = playHigh(nextStart, 8, amp)
+        var playDuration4 = playHigh(nextStart, 8, amp, HIGH_SECOND_BUS)
         addUi("High", nextStart, 0.5, playDuration4, 8)
 
         nextStart = nextStart + (Seq(playDuration0, playDuration1, playDuration2, playDuration3, playDuration4).max * randomRange(0.66, 0.75))
-        playDuration0 = playSubBass(nextStart, 10, amp)
+        playDuration0 = playSubBass(nextStart, 10, amp, SUB_SECOND_BUS)
         addUi("Sub", nextStart, 0.5, playDuration0, 10)
-        playDuration1 = playLow(nextStart, 10, amp)
+        playDuration1 = playLow(nextStart, 10, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration1, 10)
-        playDuration2 = playMiddle(nextStart, 10, amp)
+        playDuration2 = playMiddle(nextStart, 10, amp, MIDDLE_SECOND_BUS)
         addUi("Middle", nextStart, 0.5, playDuration2, 10)
-        playDuration3 = playMiddleHigh(nextStart, 10, amp)
+        playDuration3 = playMiddleHigh(nextStart, 10, amp, MIDDLE_HIGH_SECOND_BUS)
         addUi("Middle high", nextStart, 0.5, playDuration3, 10)
-        playDuration4 = playHigh(nextStart, 10, amp)
+        playDuration4 = playHigh(nextStart, 10, amp, HIGH_SECOND_BUS)
         addUi("High", nextStart, 0.5, playDuration4, 10)
 
         nextStart = nextStart + (Seq(playDuration0, playDuration1, playDuration2, playDuration3, playDuration4).max * randomRange(0.66, 0.75))
@@ -418,7 +438,7 @@ object AmbientMusic5 {
         0 until 5 foreach {
           i =>
             val amp = randomRange(0.5, 0.75)
-            val playDuration = playHigh(nextStart, 0, amp)
+            val playDuration = playHigh(nextStart, 0, amp, HIGH_PAD_BUS)
             addUi("High", nextStart, 0.5, playDuration, 0)
             if(i == 1) {
               secondThemeLast3(nextStart + (playDuration * randomRange(0.90, 1.1)))
@@ -430,24 +450,24 @@ object AmbientMusic5 {
       def secondThemeLast3(start: Double): Unit = {
         var nextStart = start
         val amp = randomRange(0.5, 0.75)
-        var playDuration0 = playLow(nextStart, 8, amp)
+        var playDuration0 = playLow(nextStart, 8, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration0, 8)
-        var playDuration2 = playMiddle(nextStart, 8, amp)
+        var playDuration2 = playMiddle(nextStart, 8, amp, MIDDLE_SECOND_BUS)
         addUi("Middle", nextStart, 0.5, playDuration2, 8)
-        var playDuration4 = playHigh(nextStart, 8, amp)
+        var playDuration4 = playHigh(nextStart, 8, amp, HIGH_SECOND_BUS)
         addUi("High", nextStart, 0.5, playDuration4, 8)
 
         nextStart = nextStart + (Seq(playDuration0, playDuration2, playDuration4).max * randomRange(0.66, 0.75))
-        playDuration0 = playLow(nextStart, 10, amp)
+        playDuration0 = playLow(nextStart, 10, amp, LOW_SECOND_BUS)
         addUi("Low", nextStart, 0.5, playDuration0, 10)
-        playDuration2 = playMiddle(nextStart, 10, amp)
+        playDuration2 = playMiddle(nextStart, 10, amp, MIDDLE_SECOND_BUS)
         addUi("Middle", nextStart, 0.5, playDuration2, 10)
-        playDuration4 = playHigh(nextStart, 10, amp)
+        playDuration4 = playHigh(nextStart, 10, amp, HIGH_SECOND_BUS)
         addUi("High", nextStart, 0.5, playDuration4, 10)
 
         nextStart = nextStart + (Seq(playDuration0, playDuration2, playDuration4).max * randomRange(0.66, 0.75))
 
-        val lowDuration = playLow(nextStart, 0, randomRange(0.5, 0.75))
+        val lowDuration = playLow(nextStart, 0, randomRange(0.5, 0.75), LOW_PAD_BUS)
         addUi("Low", nextStart, 0.5, lowDuration, 0)
       }
 
@@ -456,6 +476,10 @@ object AmbientMusic5 {
         case (name, buffer) => (name, buffer.toSeq)
       })
       displayUiModel(uim)
+
+      if (WRITE_TO_SCORE) {
+        synthPlayer.superColliderScore.makeScore("ambientMusic5.txt")
+      }
     }
 
     case class UiNote(start: Double, peak: Double, duration: Double, note: Int)
@@ -546,7 +570,7 @@ object AmbientMusic5 {
 
     }
 
-    def playSubBass(start: Double, note: Int, amp: Double): Double = {
+    def playSubBass(start: Double, note: Int, amp: Double, outputBus: Int): Double = {
       val duration = randomRange(8, 21)
       val attackTime = randomRange(0.33, 0.66)
       synthPlayer()
@@ -555,42 +579,42 @@ object AmbientMusic5 {
           staticControl(randomRange(10, 20)),
           relativePercControl(0.001, amp, attackTime, Left(Seq(0, 0))))
         .pan(staticControl(randomRange(-0.4, 0.4)))
-        .playWithDuration(start, duration)
+        .playWithDuration(start, duration, outputBus, shouldWriteToScore = WRITE_TO_SCORE)
 
       duration
     }
 
-    def playLow(start: Double, note: Int, amp: Double): Double = {
+    def playLow(start: Double, note: Int, amp: Double, outputBus: Int): Double = {
       pickItems(Seq(0, 1, 2, 3), 2).map {
         case 0 =>
-          withLowpass(start, note, amp, spectrum.head)
+          withLowpass(start, note, amp, spectrum.head, outputBus)
         case low =>
-          withBandpass(start, note, amp, spectrum(low), spectrum(low + 1))
+          withBandpass(start, note, amp, spectrum(low), spectrum(low + 1), outputBus)
       }.max
     }
 
-    def playMiddle(start: Double, note: Int, amp: Double): Double = {
+    def playMiddle(start: Double, note: Int, amp: Double, outputBus: Int): Double = {
       pickItems(Seq(4, 5, 6, 7, 8), 3).map {
         low =>
-          withBandpass(start, note, amp, spectrum(low), spectrum(low + 1))
+          withBandpass(start, note, amp, spectrum(low), spectrum(low + 1), outputBus)
       }.max
     }
 
-    def playMiddleHigh(start: Double, note: Int, amp: Double): Double = {
+    def playMiddleHigh(start: Double, note: Int, amp: Double, outputBus: Int): Double = {
       pickItems(Seq(10, 11, 12, 13, 14, 15, 16, 17), 3).map {
         low =>
-          withBandpass(start, note, amp, spectrum(low), spectrum(low + 1))
+          withBandpass(start, note, amp, spectrum(low), spectrum(low + 1), outputBus)
       }.max
     }
 
-    def playHigh(start: Double, note: Int, amp: Double): Double = {
+    def playHigh(start: Double, note: Int, amp: Double, outputBus: Int): Double = {
       pickItems(Seq(19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 36, 37), 3).map {
         low =>
-          withBandpass(start, note, amp, spectrum(low), spectrum(low + 1))
+          withBandpass(start, note, amp, spectrum(low), spectrum(low + 1), outputBus)
       }.max
     }
 
-    def withBandpass(start: Double, note: Int, amp: Double, low: Double, high: Double): Double = {
+    def withBandpass(start: Double, note: Int, amp: Double, low: Double, high: Double, outputBus: Int): Double = {
       val modStart = randomRange(1000, 40000)
       val modPeak = randomRange(1000, 40000)
 
@@ -600,7 +624,6 @@ object AmbientMusic5 {
       val panStart = randomRange(-0.9, 0.9)
       val panEnd = randomRange(-0.9, 0.9)
 
-      //val duration = randomRange(5, 13)
       val duration = randomRange(8, 13)
 
       synthPlayer()
@@ -611,7 +634,7 @@ object AmbientMusic5 {
         .highPass(staticControl(low))
         .lowPass(staticControl(high))
         .pan(lineControl(panStart, panEnd))
-        .playWithDuration(start, duration)
+        .playWithDuration(start, duration, outputBus = outputBus, shouldWriteToScore = WRITE_TO_SCORE)
 
       synthPlayer()
         .sineFm(staticControl(carrier),
@@ -621,12 +644,12 @@ object AmbientMusic5 {
         .highPass(staticControl(low))
         .lowPass(staticControl(high))
         .pan(lineControl(panEnd, panStart))
-        .playWithDuration(start, duration)
+        .playWithDuration(start, duration, outputBus = outputBus, shouldWriteToScore = WRITE_TO_SCORE)
 
       duration
     }
 
-    def withLowpass(start: Double, note: Int, amp: Double, lowPass: Double): Double = {
+    def withLowpass(start: Double, note: Int, amp: Double, lowPass: Double, outputBus: Int): Double = {
       val modStart = randomRange(1000, 40000)
       val modPeak = randomRange(1000, 40000)
 
@@ -646,7 +669,7 @@ object AmbientMusic5 {
           relativePercControl(0.001, amp, attackTime, Left(Seq(0, 0))))
         .lowPass(staticControl(lowPass))
         .pan(lineControl(panStart, panEnd))
-        .playWithDuration(start, duration)
+        .playWithDuration(start, duration, outputBus = outputBus, shouldWriteToScore = WRITE_TO_SCORE)
 
       synthPlayer()
         .sineFm(staticControl(carrier),
@@ -655,7 +678,7 @@ object AmbientMusic5 {
           relativePercControl(0.001, amp, attackTime, Left(Seq(0, 0))))
         .lowPass(staticControl(lowPass))
         .pan(lineControl(panEnd, panStart))
-        .playWithDuration(start, duration)
+        .playWithDuration(start, duration, outputBus = outputBus, shouldWriteToScore = WRITE_TO_SCORE)
 
       duration
     }
